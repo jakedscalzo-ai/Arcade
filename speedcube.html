@@ -1,282 +1,252 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Speedcube Timer Pro</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speedcube Timer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
 
-<style>
-body {
-    font-family: 'Segoe UI', sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: #222;
-    color: white;
-    margin: 0;
-    height: 100vh;
-    position: relative; /* Allows absolute positioning for the hub button */
-}
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
 
-/* Hub Button Styling */
-#hubBtn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    padding: 10px 15px;
-    background: #444;
-    border: 1px solid #666;
-    border-radius: 6px;
-    color: white;
-    font-size: 0.9rem;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background 0.2s;
-}
+        /* Top Right Hub Button */
+        .hub-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #333;
+            color: #fff;
+            text-decoration: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.2s;
+            z-index: 10;
+        }
 
-#hubBtn:hover {
-    background: #555;
-}
+        .hub-btn:hover {
+            background-color: #444;
+        }
 
-#scramble {
-    font-size: 1.5rem;
-    margin-bottom: 20px;
-    color: #ccc;
-    text-align: center;
-    max-width: 500px;
-}
+        /* Main Layout */
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
 
-#display {
-    font-size: 120px;
-    font-weight: bold;
-}
+        /* Timer Display */
+        .timer-display {
+            font-size: 18vw;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            cursor: pointer;
+            transition: color 0.1s;
+            z-index: 2;
+        }
 
-.ready {
-    color: #2ecc71 !important;
-    text-shadow: 0 0 20px #2ecc71;
-}
+        .timer-display.ready {
+            color: #00ff66;
+        }
 
-.hint {
-    margin-top: 10px;
-    color: #888;
-}
+        .timer-display.holding {
+            color: #ff3333;
+        }
 
-/* Times Box */
-#timesContainer {
-    margin-top: 30px;
-    width: 300px;
-    height: 220px;
-    background: #111;
-    border: 2px solid #444;
-    border-radius: 10px;
-    padding: 10px;
-    overflow-y: auto;
-}
+        /* Scores Sidebar/Bottom Panel */
+        .scores-panel {
+            position: absolute;
+            bottom: 40px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            z-index: 2;
+        }
 
-#timesContainer h3 {
-    text-align: center;
-    margin: 5px 0 10px 0;
-}
+        .scores-title {
+            font-size: 18px;
+            letter-spacing: 1px;
+            color: #888;
+            margin-bottom: 10px;
+            cursor: pointer;
+            display: inline-block;
+            transition: color 0.2s;
+        }
 
-.time-item {
-    background: #333;
-    padding: 8px;
-    border-radius: 6px;
-    text-align: center;
-    margin-bottom: 5px;
-    cursor: pointer;
-}
+        .scores-title:hover {
+            color: #ff3333;
+        }
 
-.best {
-    background: #2ecc71 !important;
-    color: black;
-}
+        .scores-list {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            list-style: none;
+            flex-wrap: wrap;
+            max-height: 80px;
+            overflow-y: auto;
+            padding: 5px;
+        }
 
-/* Stats */
-#stats {
-    margin-top: 10px;
-    color: #ccc;
-}
+        .score-item {
+            background: #222;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 16px;
+            font-variant-numeric: tabular-nums;
+            border: 1px solid #333;
+        }
 
-/* Reset Button */
-#resetBtn {
-    margin-top: 15px;
-    padding: 10px 20px;
-    background: #e74c3c;
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-size: 1rem;
-    cursor: pointer;
-}
-
-#resetBtn:hover {
-    background: #c0392b;
-}
-</style>
+        /* Background interaction overlay to catch clicks/touches anywhere */
+        .touch-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+    </style>
 </head>
-
 <body>
 
-<!-- Back to Hub Button -->
-<a href="index.html" id="hubBtn">Back to Hub</a>
+    <a href="index.html" class="hub-btn">Back to Hub</a>
 
-<div id="scramble"></div>
+    <div class="container">
+        <div class="touch-overlay" id="overlay"></div>
+        <div class="timer-display" id="timer">0.00</div>
+        
+        <div class="scores-panel">
+            <div class="scores-title" id="scores-label">SCORES</div>
+            <ul class="scores-list" id="scores-list"></ul>
+        </div>
+    </div>
 
-<div id="display">0.000</div>
-<div class="hint">Hold SPACE → Release → Start | Any key = Stop</div>
+    <script>
+        const timerDisplay = document.getElementById('timer');
+        const scoresList = document.getElementById('scores-list');
+        const scoresLabel = document.getElementById('scores-label');
+        const overlay = document.getElementById('overlay');
 
-<div id="stats">Ao5: --</div>
+        let startTime = 0;
+        let elapsedInterval = null;
+        let timerState = 'idle'; // idle, holding, running
+        let scores = JSON.parse(localStorage.getItem('cube_scores')) || [];
 
-<div id="timesContainer">
-    <h3>Times</h3>
-    <div id="times"></div>
-</div>
+        // Initialize display
+        renderScores();
 
-<button id="resetBtn">Reset Times</button>
+        // --- Core Timer Logic ---
+        function handleTriggerDown(e) {
+            // Prevent browser scrolling or zooming on space/touch
+            if (e.type === 'keydown' && e.code !== 'Space') return;
+            if (e.target.closest('.hub-btn') || e.target.closest('#scores-label')) return; 
+            e.preventDefault();
 
-<script>
-let startTime, timerInterval;
-let isRunning = false;
-let isReady = false;
-
-const display = document.getElementById('display');
-const timesDiv = document.getElementById('times');
-const stats = document.getElementById('stats');
-const scrambleDiv = document.getElementById('scramble');
-const resetBtn = document.getElementById('resetBtn');
-
-let times = JSON.parse(localStorage.getItem("times")) || [];
-let bestTime = null;
-
-/* ---------- Scramble Generator ---------- */
-const moves = ["R","L","U","D","F","B"];
-const modifiers = ["", "'", "2"];
-
-function generateScramble() {
-    let scramble = "";
-    for (let i = 0; i < 20; i++) {
-        let move = moves[Math.floor(Math.random()*moves.length)];
-        let mod = modifiers[Math.floor(Math.random()*modifiers.length)];
-        scramble += move + mod + " ";
-    }
-    scrambleDiv.innerText = scramble;
-}
-
-generateScramble();
-
-/* ---------- Timer Controls ---------- */
-window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space') {
-        if (isRunning) {
-            stopTimer();
-        } else if (!isReady) {
-            display.classList.add('ready');
-            isReady = true;
-        }
-    } else if (isRunning) {
-        stopTimer();
-    }
-});
-
-window.addEventListener('keyup', (e) => {
-    if (e.code === 'Space' && isReady && !isRunning) {
-        startTimer();
-        display.classList.remove('ready');
-        isReady = false;
-    }
-});
-
-/* ---------- Timer Functions ---------- */
-function startTimer() {
-    isRunning = true;
-    startTime = performance.now();
-    timerInterval = setInterval(updateDisplay, 10);
-}
-
-function stopTimer() {
-    isRunning = false;
-    clearInterval(timerInterval);
-
-    const finalTime = parseFloat(display.innerText);
-    times.unshift(finalTime);
-
-    saveTimes();
-    renderTimes();
-    updateStats();
-    generateScramble();
-}
-
-function updateDisplay() {
-    const time = (performance.now() - startTime) / 1000;
-    display.innerText = time.toFixed(3);
-}
-
-/* ---------- Times Handling ---------- */
-function renderTimes() {
-    timesDiv.innerHTML = "";
-
-    if (times.length > 0) {
-        bestTime = Math.min(...times);
-    }
-
-    times.forEach(time => {
-        const div = document.createElement('div');
-        div.className = 'time-item';
-        div.textContent = time.toFixed(3);
-
-        if (time === bestTime) {
-            div.classList.add('best');
+            if (timerState === 'running') {
+                stopTimer();
+            } else if (timerState === 'idle') {
+                timerState = 'holding';
+                timerDisplay.classList.add('holding');
+            }
         }
 
-        // Click to delete individual time
-        div.onclick = () => {
-            times = times.filter(t => t !== time);
-            saveTimes();
-            renderTimes();
-            updateStats();
-        };
+        function handleTriggerUp(e) {
+            if (e.type === 'keyup' && e.code !== 'Space') return;
+            if (e.target.closest('.hub-btn') || e.target.closest('#scores-label')) return;
+            e.preventDefault();
 
-        timesDiv.appendChild(div);
-    });
-}
+            if (timerState === 'holding') {
+                startTimer();
+            }
+        }
 
-function saveTimes() {
-    localStorage.setItem("times", JSON.stringify(times));
-}
+        function startTimer() {
+            timerState = 'running';
+            timerDisplay.classList.remove('holding');
+            timerDisplay.classList.add('ready');
+            startTime = performance.now();
+            
+            elapsedInterval = setInterval(() => {
+                const now = performance.now();
+                timerDisplay.textContent = formatTime(now - startTime);
+            }, 10);
+        }
 
-/* ---------- Ao5 ---------- */
-function updateStats() {
-    if (times.length < 5) {
-        stats.innerText = "Ao5: --";
-        return;
-    }
+        function stopTimer() {
+            clearInterval(elapsedInterval);
+            const finalTimeStr = timerDisplay.textContent;
+            timerState = 'idle';
+            timerDisplay.classList.remove('ready');
+            
+            // Save Score
+            scores.unshift(finalTimeStr);
+            if (scores.length > 5) scores.pop(); // Keep latest 5 scores
+            localStorage.setItem('cube_scores', JSON.stringify(scores));
+            renderScores();
+        }
 
-    let last5 = times.slice(0,5);
-    last5.sort((a,b)=>a-b);
+        function formatTime(ms) {
+            const seconds = Math.floor(ms / 1000);
+            const hundredths = Math.floor((ms % 1000) / 10);
+            return `${seconds}.${hundredths.toString().padStart(2, '0')}`;
+        }
 
-    last5.pop();   // remove worst
-    last5.shift(); // remove best
+        function renderScores() {
+            scoresList.innerHTML = '';
+            scores.forEach(score => {
+                const li = document.createElement('li');
+                li.className = 'score-item';
+                li.textContent = score;
+                scoresList.appendChild(li);
+            });
+        }
 
-    let avg = last5.reduce((a,b)=>a+b,0) / last5.length;
-    stats.innerText = "Ao5: " + avg.toFixed(3);
-}
+        // --- Event Listeners ---
 
-/* ---------- Reset Button ---------- */
-resetBtn.onclick = () => {
-    if (confirm("Are you sure you want to reset all times?")) {
-        times = [];
-        saveTimes();
-        renderTimes();
-        updateStats();
-        display.innerText = "0.000";
-    }
-};
+        // Keyboard Input
+        window.addEventListener('keydown', handleTriggerDown);
+        window.addEventListener('keyup', handleTriggerUp);
 
-/* ---------- Load Existing ---------- */
-renderTimes();
-updateStats();
-</script>
+        // Mouse Input (Everywhere except menu items)
+        window.addEventListener('mousedown', handleTriggerDown);
+        window.addEventListener('mouseup', handleTriggerUp);
 
+        // Mobile Touch Input
+        window.addEventListener('touchstart', handleTriggerDown, { passive: false });
+        window.addEventListener('touchend', handleTriggerUp, { passive: false });
+
+        // --- Reset functionality ---
+        scoresLabel.addEventListener('click', (e) => {
+            e.stopPropagation(); // Avoid triggering the timer
+            const confirmReset = confirm("Do you wan't to reset all of your scores? yes or no.");
+            if (confirmReset) {
+                scores = [];
+                localStorage.removeItem('cube_scores');
+                renderScores();
+                timerDisplay.textContent = "0.00";
+            }
+        });
+    </script>
 </body>
 </html>
