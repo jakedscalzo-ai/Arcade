@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Make 24</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@700&display=swap" rel="stylesheet" />
+  <link href="https://googleapis.com" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -100,7 +100,7 @@
       justify-content: center;
     }
 
-    button {
+    button, .btn-link {
       font-family: 'Oxanium', sans-serif;
       font-size: 0.9rem;
       padding: 0.9rem 1.6rem;
@@ -108,13 +108,17 @@
       cursor: pointer;
       letter-spacing: 0.05em;
       transition: transform 0.08s, box-shadow 0.08s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    button:hover {
+    button:hover, .btn-link:hover {
       transform: translate(-2px, -2px);
     }
 
-    button:active {
+    button:active, .btn-link:active {
       transform: translate(3px, 3px);
       box-shadow: none !important;
     }
@@ -141,6 +145,19 @@
       background: var(--cyan);
       color: #10001a;
       box-shadow: 6px 6px 0 var(--cyan);
+    }
+
+    #btn-hub {
+      background: transparent;
+      color: var(--magenta);
+      border: 3px solid var(--magenta);
+      box-shadow: 4px 4px 0 var(--magenta);
+    }
+
+    #btn-hub:hover {
+      background: var(--magenta);
+      color: var(--white);
+      box-shadow: 6px 6px 0 var(--magenta);
     }
 
     .solution-box {
@@ -186,6 +203,7 @@
   </div>
 
   <div class="buttons">
+    <a href="index.html" class="btn-link" id="btn-hub">BACK TO HUB</a>
     <button id="btn-refresh" onclick="newGame()">NEW GAME</button>
     <button id="btn-reveal" onclick="reveal()">REVEAL</button>
   </div>
