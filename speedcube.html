@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Speedcube Timer Pro</title>
+
+<style>
+body {
+    font-family: 'Segoe UI', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #222;
+    color: white;
+    margin: 0;
+    height: 100vh;
+    position: relative; /* Allows absolute positioning for the hub button */
+}
+
+/* Hub Button Styling */
+#hubBtn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 10px 15px;
+    background: #444;
+    border: 1px solid #666;
+    border-radius: 6px;
+    color: white;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+#hubBtn:hover {
+    background: #555;
+}
+
+#scramble {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    color: #ccc;
+    text-align: center;
+    max-width: 500px;
+}
+
+#display {
+    font-size: 120px;
+    font-weight: bold;
+}
+
+.ready {
+    color: #2ecc71 !important;
+    text-shadow: 0 0 20px #2ecc71;
+}
+
+.hint {
+    margin-top: 10px;
+    color: #888;
+}
+
+/* Times Box */
+#timesContainer {
+    margin-top: 30px;
+    width: 300px;
+    height: 220px;
+    background: #111;
+    border: 2px solid #444;
+    border-radius: 10px;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+#timesContainer h3 {
+    text-align: center;
+    margin: 5px 0 10px 0;
+}
+
+.time-item {
+    background: #333;
+    padding: 8px;
+    border-radius: 6px;
+    text-align: center;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+.best {
+    background: #2ecc71 !important;
+    color: black;
+}
+
+/* Stats */
+#stats {
+    margin-top: 10px;
+    color: #ccc;
+}
+
+/* Reset Button */
+#resetBtn {
+    margin-top: 15px;
+    padding: 10px 20px;
+    background: #e74c3c;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+#resetBtn:hover {
+    background: #c0392b;
+}
+</style>
+</head>
+
+<body>
+
+<!-- Back to Hub Button -->
+<a href="index.html" id="hubBtn">Back to Hub</a>
+
+<div id="scramble"></div>
+
+<div id="display">0.000</div>
+<div class="hint">Hold SPACE → Release → Start | Any key = Stop</div>
+
+<div id="stats">Ao5: --</div>
+
+<div id="timesContainer">
+    <h3>Times</h3>
+    <div id="times"></div>
+</div>
+
+<button id="resetBtn">Reset Times</button>
+
+<script>
+let startTime, timerInterval;
+let isRunning = false;
+let isReady = false;
+
+const display = document.getElementById('display');
+const timesDiv = document.getElementById('times');
+const stats = document.getElementById('stats');
+const scrambleDiv = document.getElementById('scramble');
+const resetBtn = document.getElementById('resetBtn');
+
+let times = JSON.parse(localStorage.getItem("times")) || [];
+let bestTime = null;
+
+/* ---------- Scramble Generator ---------- */
+const moves = ["R","L","U","D","F","B"];
+const modifiers = ["", "'", "2"];
+
+function generateScramble() {
+    let scramble = "";
+    for (let i = 0; i < 20; i++) {
+        let move = moves[Math.floor(Math.random()*moves.length)];
+        let mod = modifiers[Math.floor(Math.random()*modifiers.length)];
+        scramble += move + mod + " ";
+    }
+    scrambleDiv.innerText = scramble;
+}
+
+generateScramble();
+
+/* ---------- Timer Controls ---------- */
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        if (isRunning) {
+            stopTimer();
+        } else if (!isReady) {
+            display.classList.add('ready');
+            isReady = true;
+        }
+    } else if (isRunning) {
+        stopTimer();
+    }
+});
+
+window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space' && isReady && !isRunning) {
+        startTimer();
+        display.classList.remove('ready');
+        isReady = false;
+    }
+});
+
+/* ---------- Timer Functions ---------- */
+function startTimer() {
+    isRunning = true;
+    startTime = performance.now();
+    timerInterval = setInterval(updateDisplay, 10);
+}
+
+function stopTimer() {
+    isRunning = false;
+    clearInterval(timerInterval);
+
+    const finalTime = parseFloat(display.innerText);
+    times.unshift(finalTime);
+
+    saveTimes();
+    renderTimes();
+    updateStats();
+    generateScramble();
+}
+
+function updateDisplay() {
+    const time = (performance.now() - startTime) / 1000;
+    display.innerText = time.toFixed(3);
+}
+
+/* ---------- Times Handling ---------- */
+function renderTimes() {
+    timesDiv.innerHTML = "";
+
+    if (times.length > 0) {
+        bestTime = Math.min(...times);
+    }
+
+    times.forEach(time => {
+        const div = document.createElement('div');
+        div.className = 'time-item';
+        div.textContent = time.toFixed(3);
+
+        if (time === bestTime) {
+            div.classList.add('best');
+        }
+
+        // Click to delete individual time
+        div.onclick = () => {
+            times = times.filter(t => t !== time);
+            saveTimes();
+            renderTimes();
+            updateStats();
+        };
+
+        timesDiv.appendChild(div);
+    });
+}
+
+function saveTimes() {
+    localStorage.setItem("times", JSON.stringify(times));
+}
+
+/* ---------- Ao5 ---------- */
+function updateStats() {
+    if (times.length < 5) {
+        stats.innerText = "Ao5: --";
+        return;
+    }
+
+    let last5 = times.slice(0,5);
+    last5.sort((a,b)=>a-b);
+
+    last5.pop();   // remove worst
+    last5.shift(); // remove best
+
+    let avg = last5.reduce((a,b)=>a+b,0) / last5.length;
+    stats.innerText = "Ao5: " + avg.toFixed(3);
+}
+
+/* ---------- Reset Button ---------- */
+resetBtn.onclick = () => {
+    if (confirm("Are you sure you want to reset all times?")) {
+        times = [];
+        saveTimes();
+        renderTimes();
+        updateStats();
+        display.innerText = "0.000";
+    }
+};
+
+/* ---------- Load Existing ---------- */
+renderTimes();
+updateStats();
+</script>
+
+</body>
+</html>
