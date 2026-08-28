@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simon Says Game</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.08);
+            --red: #ff4757;
+            --yellow: #ffa502;
+            --green: #2ed573;
+            --purple: #a29bfe;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 5vh;
+            color: white;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 10vw, 4rem);
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+            background: linear-gradient(to bottom, #fff, #94a3b8);
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h2 {
+            font-weight: 300;
+            margin: 10px 0 30px 0;
+            color: #94a3b8;
+            font-size: clamp(1rem, 4vw, 1.2rem);
+            text-align: center;
+        }
+        .pc-text { display: block; }
+        .mobile-text { display: none; }
+
+        @media (max-width: 1024px) {
+            .pc-text { display: none; }
+            .mobile-text { display: block; }
+        }
+        .game-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 40px;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .first, .sec {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            height: clamp(110px, 38vw, 180px);
+            width: clamp(110px, 38vw, 180px);
+            border: 8px solid #0f172a;
+            border-radius: 25%;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.02);
+            filter: brightness(1.1);
+        }
+
+        .r { background-color: var(--red); box-shadow: inset 0 0 20px rgba(0,0,0,0.3); }
+        .y { background-color: var(--yellow); box-shadow: inset 0 0 20px rgba(0,0,0,0.3); }
+        .g { background-color: var(--green); box-shadow: inset 0 0 20px rgba(0,0,0,0.3); }
+        .p { background-color: var(--purple); box-shadow: inset 0 0 20px rgba(0,0,0,0.3); }
+
+        .flash {
+            background-color: white !important;
+            box-shadow: 0 0 60px white !important;
+            transform: scale(1.05);
+        }
+
+        .userflash {
+            background-color: #63ff63 !important;
+            box-shadow: 0 0 40px #2ed573 !important;
+        }
+        #start-controller {
+            position: fixed;
+            bottom: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        @media (min-width: 1025px) {
+            #start-controller {
+                display: none;
+            }
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+        }
+
+        #mobile-start-btn {
+            background: linear-gradient(145deg, #2e3a4e, #1e293b);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 15px;
+            box-shadow: 0 8px 0 #0f172a, 0 15px 25px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: all 0.1s;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        #mobile-start-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #0f172a, 0 10px 15px rgba(0,0,0,0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Simon</h1>
+    <h2>
+        <span class="pc-text">Press any key from your keyboard to start the game <br>
+        Follow the sequence to win.</span>
+        <span class="mobile-text">Press Start Key to start the game  <br>
+        Follow the sequence to win.</span>
+    </h2>
+
+    <div class="game-container">
+        <div class="container">
+            <div class="first">
+                <div class="btn r" id="r" type="button"></div>
+                <div class="btn y" id="y" type="button"></div>
+            </div>
+            <div class="sec">
+                <div class="btn g" id="g" type="button"></div>
+                <div class="btn p" id="p" type="button"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="start-controller">
+        <button id="mobile-start-btn">START GAME</button>
+    </div>
+
+    <script>
+        let gameseq=[];
+        let userseq=[];
+        let btns=["y","r","p","g"];
+        let started=false;
+        let level=0;
+        let h2=document.querySelector("h2");
+        let startCtrl = document.getElementById("start-controller");
+        let startBtn = document.getElementById("mobile-start-btn");
+
+        function startGame() {
+            if(started==false){
+                started=true;
+                startCtrl.classList.add("hidden");
+                levelup();
+            }
+        }
+
+        document.addEventListener("keypress", startGame);
+        startBtn.addEventListener("click", startGame);
+
+        function gameflash(btn){
+            btn.classList.add("flash");
+            setTimeout(function(){
+                btn.classList.remove("flash");
+            },250)
+        }
+
+        function userflash(btn){
+            btn.classList.add("userflash");
+            setTimeout(function(){
+                btn.classList.remove("userflash");
+            },250)
+        }
+
+        function levelup(){
+            userseq=[];
+            level++;
+            h2.innerText=`Level ${level}`;
+
+            let rind=Math.floor(Math.random()*4);
+            let rcolor=btns[rind];
+            let rbtn=document.querySelector(`.${rcolor}`);
+            
+            gameseq.push(rcolor);
+            gameflash(rbtn);
+        }
+
+        function checkseq(ind){
+            if(userseq[ind]==gameseq[ind]){
+                if(userseq.length==gameseq.length){
+                    setTimeout(levelup,1000);
+                }
+            }else{
+                h2.innerHTML = `Game Over! Your Score: <b>${level-1}</b><br>` + 
+                `<span class="pc-text">Press any key from your keyboard to start</span>` +
+                `<span class="mobile-text">Press Start Key to start the game</span>`;
+                
+                startCtrl.classList.remove("hidden");
+                document.body.style.backgroundColor = "rgba(255,0,0,0.4)";
+                setTimeout(() => { document.body.style.backgroundColor = ""; }, 150);
+
+                started=false;
+                level=0;
+                gameseq = [];
+            }
+        }
+
+        function btnpress(){
+            let btn=this;
+            userflash(btn);
+            let ucolor=btn.getAttribute("id");
+            userseq.push(ucolor);
+            checkseq(userseq.length-1);
+        }
+        
+        let allbtns=document.querySelectorAll(".btn");
+        for(i of allbtns){
+            i.addEventListener("click",btnpress);
+        }
+    </script>
+</body>
+</html>
